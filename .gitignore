@@ -1,0 +1,34 @@
+# Gitignore para SIS Password
+
+# Archivos de configuración sensibles
+.env
+config/config.php
+
+# Logs
+logs/
+*.log
+
+# Cache
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Temporal
+temp/
+tmp/
+*.tmp
+
+# Bases de datos
+*.sql.gz
+*.backup
+
+# Archivos del sistema
+.htaccess.bak

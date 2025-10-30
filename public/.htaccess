@@ -1,0 +1,40 @@
+# SIS Password - Configuración Apache
+
+# Evitar listado de directorios
+Options -Indexes
+
+# Directorio raíz por defecto
+DirectoryIndex login.php index.php
+
+# Reescritura de URLs
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /sis-password-php/public/
+    
+    # Proteger carpetas sensibles
+    RewriteRule ^\.env$ - [F]
+    RewriteRule ^config/ - [F]
+    RewriteRule ^api/ - [F]
+</IfModule>
+
+# Headers de seguridad
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+</IfModule>
+
+# Comprimir respuestas
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>
+
+# Cache de archivos estáticos
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+</IfModule>
