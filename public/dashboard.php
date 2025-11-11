@@ -637,7 +637,8 @@ try {
                                         <th>Operario</th>
                                         <th>Usuario</th>
                                         <th>Contraseña</th>
-                                        <th>Control Remoto</th>
+                                        <th>ID Control Remoto</th>
+                                        <th>Pass Control Remoto</th>
                                         <th>Acciones</th>
                                     </tr>
                                 </thead>
@@ -652,7 +653,8 @@ try {
                                 <td>${escapeHtml(u.operario)}</td>
                                 <td><code>${escapeHtml(u.nombre_usuario)}</code></td>
                                 <td><code>${escapeHtml(u.password)}</code></td>
-                                <td>${u.id_control_remoto ? `${escapeHtml(u.id_control_remoto)}` : '-'}</td>
+                                <td>${u.id_control_remoto ? escapeHtml(u.id_control_remoto) : '-'}</td>
+                                <td>${u.password_control_remoto ? `<code>${escapeHtml(u.password_control_remoto)}</code>` : '-'}</td>
                                 <td>
                                     <button class="btn btn-sm btn-primary" onclick="editarUsuario(${u.id})">
                                         <i class="bi bi-pencil"></i>
