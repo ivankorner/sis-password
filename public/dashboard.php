@@ -50,21 +50,67 @@ try {
             background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
+        .sidebar-container {
+            position: relative;
+            transition: all 0.3s ease;
+        }
         .sidebar {
             background-color: #fff;
             border-right: 1px solid #dee2e6;
             padding: 2rem 1rem;
+            min-height: calc(100vh - 56px);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        .sidebar.collapsed {
+            padding: 2rem 0.5rem;
         }
         .sidebar .nav-link {
             color: #495057;
             border-radius: 5px;
             margin-bottom: 0.5rem;
             transition: all 0.3s ease;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .sidebar.collapsed .nav-link {
+            justify-content: center;
+        }
+        .sidebar.collapsed .nav-link-text {
+            display: none;
         }
         .sidebar .nav-link:hover,
         .sidebar .nav-link.active {
             background-color: #667eea;
             color: white;
+        }
+        .sidebar-toggle {
+            position: absolute;
+            top: 10px;
+            right: -15px;
+            z-index: 1000;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #667eea;
+            color: white;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        .sidebar-toggle:hover {
+            background: #5568d3;
+            transform: scale(1.1);
+        }
+        .main-content {
+            padding: 2rem;
+            transition: all 0.3s ease;
         }
         .card {
             border: none;
@@ -83,8 +129,11 @@ try {
         .stat-card.usuarios {
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         }
-        .main-content {
-            padding: 2rem;
+        /* Responsive: ocultar toggle en móvil */
+        @media (max-width: 768px) {
+            .sidebar-toggle {
+                display: none;
+            }
         }
     </style>
 </head>
@@ -109,25 +158,34 @@ try {
     <div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
-            <div class="col-md-3 col-lg-2 sidebar">
-                <nav class="nav flex-column">
-                    <a class="nav-link active" href="#" data-page="inicio">
-                        <i class="bi bi-house"></i> Inicio
-                    </a>
-                    <a class="nav-link" href="#" data-page="pcs">
-                        <i class="bi bi-pc-display"></i> Gestionar PCs
-                    </a>
-                    <a class="nav-link" href="#" data-page="usuarios">
-                        <i class="bi bi-people"></i> Gestionar Usuarios
-                    </a>
-                    <a class="nav-link" href="administradores.php">
-                        <i class="bi bi-shield-check"></i> Administradores
-                    </a>
-                </nav>
+            <div class="col-md-3 col-lg-2 sidebar-container" id="sidebarContainer">
+                <button class="sidebar-toggle" id="sidebarToggle" title="Plegar/Desplegar menú">
+                    <i class="bi bi-chevron-left" id="toggleIcon"></i>
+                </button>
+                <div class="sidebar" id="sidebar">
+                    <nav class="nav flex-column">
+                        <a class="nav-link active" href="#" data-page="inicio">
+                            <i class="bi bi-house"></i>
+                            <span class="nav-link-text">Inicio</span>
+                        </a>
+                        <a class="nav-link" href="#" data-page="pcs">
+                            <i class="bi bi-pc-display"></i>
+                            <span class="nav-link-text">Gestionar PCs</span>
+                        </a>
+                        <a class="nav-link" href="#" data-page="usuarios">
+                            <i class="bi bi-people"></i>
+                            <span class="nav-link-text">Gestionar Usuarios</span>
+                        </a>
+                        <a class="nav-link" href="administradores.php">
+                            <i class="bi bi-shield-check"></i>
+                            <span class="nav-link-text">Administradores</span>
+                        </a>
+                    </nav>
+                </div>
             </div>
 
             <!-- Main Content -->
-            <div class="col-md-9 col-lg-10 main-content">
+            <div class="col-md-9 col-lg-10 main-content" id="mainContent">
                 <div id="content"></div>
             </div>
         </div>
@@ -226,6 +284,46 @@ try {
         let modalUsuario = new bootstrap.Modal('#modalUsuario');
         let pcsCache = [];
         let usuariosCache = [];
+
+        // ===== TOGGLE SIDEBAR =====
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarContainer = document.getElementById('sidebarContainer');
+        const mainContent = document.getElementById('mainContent');
+        const toggleIcon = document.getElementById('toggleIcon');
+
+        // Cargar estado del sidebar desde localStorage
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        if (sidebarCollapsed) {
+            sidebar.classList.add('collapsed');
+            sidebarContainer.classList.remove('col-md-3', 'col-lg-2');
+            sidebarContainer.classList.add('col-md-1', 'col-lg-1');
+            mainContent.classList.remove('col-md-9', 'col-lg-10');
+            mainContent.classList.add('col-md-11', 'col-lg-11');
+            toggleIcon.className = 'bi bi-chevron-right';
+        }
+
+        sidebarToggle.addEventListener('click', () => {
+            const isCollapsed = sidebar.classList.toggle('collapsed');
+            
+            if (isCollapsed) {
+                // Contraer
+                sidebarContainer.classList.remove('col-md-3', 'col-lg-2');
+                sidebarContainer.classList.add('col-md-1', 'col-lg-1');
+                mainContent.classList.remove('col-md-9', 'col-lg-10');
+                mainContent.classList.add('col-md-11', 'col-lg-11');
+                toggleIcon.className = 'bi bi-chevron-right';
+                localStorage.setItem('sidebarCollapsed', 'true');
+            } else {
+                // Expandir
+                sidebarContainer.classList.remove('col-md-1', 'col-lg-1');
+                sidebarContainer.classList.add('col-md-3', 'col-lg-2');
+                mainContent.classList.remove('col-md-11', 'col-lg-11');
+                mainContent.classList.add('col-md-9', 'col-lg-10');
+                toggleIcon.className = 'bi bi-chevron-left';
+                localStorage.setItem('sidebarCollapsed', 'false');
+            }
+        });
 
         // ===== NAVEGACIÓN =====
         document.querySelectorAll('.nav-link').forEach(link => {
