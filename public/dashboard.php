@@ -45,6 +45,7 @@ try {
     <style>
         body {
             background-color: #f8f9fa;
+            overflow-x: hidden;
         }
         .navbar {
             background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
@@ -129,10 +130,86 @@ try {
         .stat-card.usuarios {
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         }
-        /* Responsive: ocultar toggle en móvil */
+        /* Botón hamburguesa móvil */
+        .mobile-menu-btn {
+            display: none;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+        /* Overlay para móvil */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1040;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .sidebar-overlay.show {
+            display: block;
+            opacity: 1;
+        }
+        
+        /* Responsive: Móviles y tablets */
         @media (max-width: 768px) {
+            .mobile-menu-btn {
+                display: block;
+            }
             .sidebar-toggle {
                 display: none;
+            }
+            .sidebar-container {
+                position: fixed;
+                top: 56px;
+                left: -100%;
+                width: 280px;
+                height: calc(100vh - 56px);
+                z-index: 1050;
+                transition: left 0.3s ease;
+                box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            }
+            .sidebar-container.show {
+                left: 0;
+            }
+            .sidebar {
+                height: 100%;
+                overflow-y: auto;
+                padding: 1.5rem 1rem;
+            }
+            .main-content {
+                padding: 1rem;
+                margin-left: 0 !important;
+            }
+            /* Forzar ancho completo en móvil */
+            .sidebar-container,
+            .main-content {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+            .sidebar-container.show ~ .main-content {
+                filter: blur(2px);
+            }
+            /* Mejorar tarjetas estadísticas en móvil */
+            .stat-card {
+                padding: 1.5rem;
+            }
+            .stat-card h3 {
+                font-size: 2rem;
+            }
+        }
+        
+        /* Tablets */
+        @media (min-width: 769px) and (max-width: 991px) {
+            .main-content {
+                padding: 1.5rem;
             }
         }
     </style>
@@ -141,19 +218,28 @@ try {
     <!-- Navbar -->
     <nav class="navbar navbar-dark">
         <div class="container-fluid">
-            <a class="navbar-brand" href="#">
-                <i class="bi bi-shield-lock"></i> SIS Password
-            </a>
+            <div class="d-flex align-items-center gap-2">
+                <button class="mobile-menu-btn" id="mobileMenuBtn" title="Menú">
+                    <i class="bi bi-list"></i>
+                </button>
+                <a class="navbar-brand mb-0" href="#">
+                    <i class="bi bi-shield-lock"></i> SIS Password
+                </a>
+            </div>
             <div class="d-flex align-items-center gap-3">
-                <span class="text-light">
+                <span class="text-light d-none d-sm-inline">
                     <i class="bi bi-person-circle"></i> <?php echo htmlspecialchars($admin['nombre']); ?>
                 </span>
                 <button class="btn btn-outline-light btn-sm" id="logoutBtn">
-                    <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span class="d-none d-sm-inline">Cerrar sesión</span>
                 </button>
             </div>
         </div>
     </nav>
+
+    <!-- Overlay para móvil -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <div class="container-fluid">
         <div class="row">
@@ -285,16 +371,53 @@ try {
         let pcsCache = [];
         let usuariosCache = [];
 
-        // ===== TOGGLE SIDEBAR =====
+        // ===== MENÚ MÓVIL =====
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        
+        // Función para abrir/cerrar menú móvil
+        function toggleMobileMenu() {
+            sidebarContainer.classList.toggle('show');
+            sidebarOverlay.classList.toggle('show');
+            document.body.style.overflow = sidebarContainer.classList.contains('show') ? 'hidden' : '';
+        }
+
+        // Función para cerrar menú móvil
+        function closeMobileMenu() {
+            sidebarContainer.classList.remove('show');
+            sidebarOverlay.classList.remove('show');
+            document.body.style.overflow = '';
+        }
+
+        // Event listeners para móvil
+        if (mobileMenuBtn) {
+            mobileMenuBtn.addEventListener('click', toggleMobileMenu);
+        }
+
+        if (sidebarOverlay) {
+            sidebarOverlay.addEventListener('click', closeMobileMenu);
+        }
+
+        // Cerrar menú al hacer clic en cualquier enlace del sidebar
+        document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                // Solo cerrar en móvil
+                if (window.innerWidth <= 768) {
+                    closeMobileMenu();
+                }
+            });
+        });
+
+        // ===== TOGGLE SIDEBAR (DESKTOP) =====
         const sidebarToggle = document.getElementById('sidebarToggle');
         const sidebar = document.getElementById('sidebar');
         const sidebarContainer = document.getElementById('sidebarContainer');
         const mainContent = document.getElementById('mainContent');
         const toggleIcon = document.getElementById('toggleIcon');
 
-        // Cargar estado del sidebar desde localStorage
+        // Cargar estado del sidebar desde localStorage (solo desktop)
         const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-        if (sidebarCollapsed) {
+        if (sidebarCollapsed && window.innerWidth > 768) {
             sidebar.classList.add('collapsed');
             sidebarContainer.classList.remove('col-md-3', 'col-lg-2');
             sidebarContainer.classList.add('col-md-1', 'col-lg-1');
@@ -303,27 +426,29 @@ try {
             toggleIcon.className = 'bi bi-chevron-right';
         }
 
-        sidebarToggle.addEventListener('click', () => {
-            const isCollapsed = sidebar.classList.toggle('collapsed');
-            
-            if (isCollapsed) {
-                // Contraer
-                sidebarContainer.classList.remove('col-md-3', 'col-lg-2');
-                sidebarContainer.classList.add('col-md-1', 'col-lg-1');
-                mainContent.classList.remove('col-md-9', 'col-lg-10');
-                mainContent.classList.add('col-md-11', 'col-lg-11');
-                toggleIcon.className = 'bi bi-chevron-right';
-                localStorage.setItem('sidebarCollapsed', 'true');
-            } else {
-                // Expandir
-                sidebarContainer.classList.remove('col-md-1', 'col-lg-1');
-                sidebarContainer.classList.add('col-md-3', 'col-lg-2');
-                mainContent.classList.remove('col-md-11', 'col-lg-11');
-                mainContent.classList.add('col-md-9', 'col-lg-10');
-                toggleIcon.className = 'bi bi-chevron-left';
-                localStorage.setItem('sidebarCollapsed', 'false');
-            }
-        });
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener('click', () => {
+                const isCollapsed = sidebar.classList.toggle('collapsed');
+                
+                if (isCollapsed) {
+                    // Contraer
+                    sidebarContainer.classList.remove('col-md-3', 'col-lg-2');
+                    sidebarContainer.classList.add('col-md-1', 'col-lg-1');
+                    mainContent.classList.remove('col-md-9', 'col-lg-10');
+                    mainContent.classList.add('col-md-11', 'col-lg-11');
+                    toggleIcon.className = 'bi bi-chevron-right';
+                    localStorage.setItem('sidebarCollapsed', 'true');
+                } else {
+                    // Expandir
+                    sidebarContainer.classList.remove('col-md-1', 'col-lg-1');
+                    sidebarContainer.classList.add('col-md-3', 'col-lg-2');
+                    mainContent.classList.remove('col-md-11', 'col-lg-11');
+                    mainContent.classList.add('col-md-9', 'col-lg-10');
+                    toggleIcon.className = 'bi bi-chevron-left';
+                    localStorage.setItem('sidebarCollapsed', 'false');
+                }
+            });
+        }
 
         // ===== NAVEGACIÓN =====
         document.querySelectorAll('.nav-link').forEach(link => {
